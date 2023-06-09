@@ -1,0 +1,396 @@
+---
+title: "Plot_guide_48"
+author: "Veronika Niederlova"
+date: '2023-06-07'
+output: html_document
+---
+
+# What's this? 
+
+This is a guide for plotting in R written by Verca for the members of lab 48. This guide is:
+
+- a very simple overview of how to create your first plot
+- supposed to serve as a start, for more plotting options you need to search elsewhere or talk to someone
+- written in a format called RMarkdown, that's why you see some white background and some grey fields; for more info about RMarkdown google
+- probably full of mistakes, if something works ask me and I'll tell you why!
+
+# What are R libraries?
+When using R, you will need to use different R libraries. R libraries, also called packages, are independent tools that you will use to perform specific tasks. If you think of R as of a box of tools for mechanics, then one library would be for example a hammer. If you need to hammer a nail, then you will need to take the hammer from the box and only then you can use it. Similarly, if you want to use a library, you need to "take it out of the full R box" and only then you can use it. 
+
+Note: To be able to load a library, you first need to download and install it. Like you first need to buy a hammer before you can take it from your box and then use it. So also if you are running this code for the first time, you will probably need to install the libraries. This is done just once - no need to do it more times.
+
+# How to run code in R and RMarkdown 
+The following grey field contains code. Each Markdown has a setup field which runs every time you start the document. The setup field usually contains the basic stuff needed for running the code in the document. 
+
+In R, you have multiple options to run code.
+1) To run one line of code, place cursor on the line of code and press ctrl + Enter.
+2) To run more lines of code, select the lines that you want to run and press ctrl + Enter.
+3) To run the whole grey field, you can press the green play button in the top right corner of the grey field.
+4) To run one or more lines, you can also copy them and paste them to Console, then press Enter. 
+
+This setup field will load the libraries we will need for plotting and data manipulation. Try running the whole field by the play button.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(readr)
+library(ggplot2)
+library(readxl)
+library(dplyr)
+library(cowplot)
+library(rstatix)
+library(ggpubr)
+```
+
+If you're running the code for the first time, you probably got an error message because you don't have the libraries installed. I.e., you don't own a hammer but you want to use it. To install the libraries you don't have, run any of the following lines (try placing cursor on the line and running only the one line you need).
+
+```{r}
+install.packages("ggplot2")
+install.packages("dplyr")
+install.packages("cowplot")
+install.packages("rstatix")
+install.packages("readr")
+install.packages("ggpubr")
+```
+
+
+# Loading data
+
+Let's assume that you have your data in Excel or csv file generated for example in FlowJo. We can load it to R manually by finding it in the files tab, or by running the following code:
+
+
+```{r}
+# Tell R that you want to work in the folder 48_lab/Courses/Plotting_in_R or any other folder of course
+
+setwd("G:/48_lab/Courses/Plotting_in_R/")
+
+# For .xlsx file run this:
+
+my_data <- readxl::read_excel("lab48_plot_guide_1.xlsx")
+
+# For .csv file run this:
+
+my_data <- readr::read_csv("your_csv_file.csv")
+
+```
+
+
+Now let's check how the data look:
+
+```{r}
+my_data
+```
+
+# First plot
+
+## Change column names in R
+
+You might have noticed that when you export data from FlowJo, you will get the full gating strategy as the column name. This is a bit too long. You can change it manually in your file, but you can also do it automatically in R. 
+
+Let's make the column names in our file shorter by removing the gating strategy:
+
+```{r}
+# Get rid of the gating strategy in the column names
+colnames(my_data) <- stringr::str_replace_all(colnames(my_data), 
+                    pattern = "Lymphocytes/Single Cells/Via, B220 subset/CD8a, TCRsw_OFF subset/TCRsw_ON, CD45_1 subset",
+                    replacement = "Donor ")
+```
+
+
+### First plot: just points
+
+Now let's try to create our first plot.
+
+```{r}
+
+my_data %>% # take my_data
+ # Select what to plot
+ ggplot(aes(x = Group, y = `Donor  | Geometric Mean (CX3CR1)`)) + 
+  
+   # Add points that will be colored by group
+ geom_dotplot(binaxis='y', 
+                size = 3, 
+               stackdir='center', 
+               aes(fill = Group))
+```
+
+### How to save a plot
+
+In R Markdown, a plot appears below the grey field in which you have the code to plot it. If you want to save it, you can put the following line after the code that generates the plot:
+
+```{r}
+ggsave("my_first_plot.png", width = 7, height = 6, units = "cm")
+```
+
+
+The previous first plot is not ideal. No worries, we will fix it soon! For example, the code generated grey background and leading lines. This is the default ggplot behaviour, but usually, we don't want the lines and we want just white background. To achieve this, we can use theme_classic().
+
+### Plot with theme_classic
+
+```{r}
+
+my_data %>% # take my_data
+ # Select what to plot
+ ggplot(aes(x = Group, y = `Donor  | Geometric Mean (CX3CR1)`)) + 
+  
+   # Add points that will be colored by group
+ geom_dotplot(binaxis='y', 
+                size = 3, 
+               stackdir='center', 
+               aes(fill = Group)) +
+  
+  theme_classic()
+
+ggsave("first_plot2.png", width = 7, height = 10, units = "cm", dpi = 120)
+
+```
+
+### More themes
+
+There are way more themes, so that you can explore which one you like the best. You can also create your own!
+
+Complete list of themes can be found here: https://ggplot2.tidyverse.org/reference/ggtheme.html
+
+
+```{r}
+my_data %>% # take my_data
+ # Select what to plot
+ ggplot(aes(x = Group, y = `Donor  | Geometric Mean (CX3CR1)`)) + 
+  
+   # Add points that will be colored by group
+ geom_dotplot(binaxis='y', 
+                size = 3, 
+               stackdir='center', 
+               aes(fill = Group)) +
+  theme_linedraw()
+```
+
+Create your own theme:
+
+```{r}
+# Define function my_theme()
+
+my_theme <- function() {
+  theme(
+    axis.text = element_text(size = 20),
+    axis.title = element_text(size = 20),
+    title = element_text(size = 20, colour = "red", family = "serif", face = "italic"),
+    text = element_text(size = 20, colour = "black"),
+    legend.text = element_text(size = 20),
+    legend.key.size =  unit(10, units = "points")
+    
+  )
+}
+
+
+# Add my_theme to the ggplot
+
+my_data %>% # take my_data
+ # Select what to plot
+ ggplot(aes(x = Group, y = `Donor  | Geometric Mean (CX3CR1)`)) + 
+  
+   # Add points that will be colored by group
+ geom_dotplot(binaxis='y', 
+                size = 3, 
+               stackdir='center', 
+               aes(fill = Group)) +
+  my_theme()
+
+
+```
+
+# Adding mean/median to the plot
+
+Now that we have a plot with points, we might want to add the mean or median. 
+
+```{r}
+my_data %>% # take my_data
+ # Select what to plot
+ ggplot(aes(x = Group, y = `Donor  | Geometric Mean (CX3CR1)`)) + 
+  
+ # Add points that will be colored by group
+ geom_dotplot(binaxis='y', 
+                size = 3, 
+               stackdir='center', 
+               aes(fill = Group)) +
+ 
+# Add line at median
+ stat_summary(fun.y = median, 
+              geom = "crossbar", 
+              width = 0.5) +
+
+ # Select a nice theme
+ theme_classic() 
+
+ggsave("first_plot3.png", width = 7, height = 10, units = "cm", dpi = 120)
+
+```
+
+
+## Bar plot
+
+We can easily change the nature of the plot to have a barplot instead of dot plot.
+
+```{r}
+
+plot <- my_data %>% 
+   
+ # Select what to plot
+ ggplot(aes(x = Group, y = `Donor /CX3CR1, SSC-A subset | Freq. of Parent`)) + 
+ 
+ # Add line at median
+ stat_summary(fun.y = median, geom = "bar", 
+              width = 0.9, aes(fill = Group), alpha = 0.5)  +
+  
+  # Add points that will be colored by group
+ geom_dotplot(binaxis = "y", size = 8, 
+               stackdir='center', aes(fill = Group)) +
+  
+ # Select a nice theme
+  theme_classic()
+   
+  plot + theme(axis.text = element_text(size = 20),
+              axis.title = element_text(size = 20),
+              axis.ticks.x = element_blank(),
+              legend.position = "none") +
+ 
+ ylab("% CX3CR1 from OT-I") + 
+  scale_y_continuous(expand = c(0, NA), limits = c(0,NA))
+    
+
+ggsave("first_plot4.png", width = 7, height = 10, units = "cm", dpi = 120)
+ 
+```
+
+# Adding statistics to the plot
+
+```{r}
+my_data %>% # take my_data
+ # Select what to plot
+ ggplot(aes(x = Group, y = `Donor  | Geometric Mean (CX3CR1)`)) + 
+  
+ # Add points that will be colored by group
+ geom_dotplots(binaxis='y', 
+               size = 3, 
+               stackdir='center', 
+               aes(color = Group)) +
+ 
+# Add line at median
+ stat_summary(fun.y = median, 
+              geom = "crossbar", 
+              width = 0.5) +
+
+ # Select a nice theme
+ theme_classic() +
+
+ # Add statistics
+ ggpubr::stat_compare_means() 
+
+```
+
+For more comples applications of statistical testing, we can use the package rstatix. See the manual here:
+
+https://github.com/kassambara/rstatix
+
+
+# Plot multiple parameters using a function
+
+Load more complex data:
+
+```{r}
+
+my_data <- readxl::read_excel("lab48_plot_guide_2.xlsx")
+
+
+my_data
+
+# Get rid of the gating strategy in the column names
+colnames(my_data) <- stringr::str_replace_all(colnames(my_data), 
+                    pattern = "Lymphocytes/Single Cells/Via, B220 subset/CD8a, TCRsw_OFF subset/TCRsw_ON, CD45_1 subset",
+                    replacement = "Donor ")
+
+colnames(my_data) <- stringr::str_replace_all(colnames(my_data), 
+                    pattern = "Lymphocytes/Single Cells/Via, B220 subset/CD8a, TCRsw_OFF subset/TCRsw_ON, CD45_1 subset-1",
+                    replacement = "Host ")
+
+```
+
+We will turn the basic plot options that we've used before into a function. A function is a set of instructions that will be then applied to all the columns of our dataset. That way, we can plot all the parameters at once!
+
+The following function will create plots for the 46 parameters we have in the excel file and save the plots to a folder called "plot_results".
+
+```{r}
+my_plot_function <- function(parameter){
+  
+
+my_data_subset <- my_data %>% dplyr::select(Group, parameter)
+colnames(my_data_subset) <- c("Group", "value")
+parameter_name <- colnames(my_data)[parameter]
+ylab <- ifelse(grepl(parameter_name, pattern = "Freq."), "% from OT-I", "gMFI")
+plot <- ggplot(my_data_subset, aes(x = Group, y = value)) + 
+ stat_summary(fun.y = median,
+                geom = "bar", 
+              width = 0.9, aes(fill = Group),
+              alpha = 0.5) +
+ geom_dotplot(binaxis='y', 
+                size = 3, 
+               stackdir='center', 
+               aes(fill = Group)) +
+  theme_classic() + 
+  ggtitle(parameter_name) + 
+  theme(axis.text = element_text(size = 20),
+              axis.title = element_text(size = 20),
+              plot.title = element_text(size = 20),
+              axis.ticks.x = element_blank(),
+              legend.position = "none") + ylab(ylab) +
+  scale_y_continuous(expand = c(0, NA), limits = c(0,NA))
+  
+ 
+plot
+ggsave(paste0("plot_results/plot_my_data_parameter_",parameter,".png"), 
+       width = 16, height = 8, units = "cm", dpi = 120)
+
+return(plot)
+
+}
+
+
+
+## Apply the function on all parameters - I have 46 of them
+
+plots <- map(3:48, my_plot_function)
+
+plots
+
+
+cowplot::plot_grid(plotlist = plots[3:8], ncol = 2)
+```
+
+Want .svg or .eps plots that are adjustable in Inkscape?
+
+```{r}
+my_plot_function_eps <- function(parameter){
+  
+
+my_data_subset <- my_data %>% select(Group, parameter)
+colnames(my_data_subset) <- c("Group", "value")
+parameter_name <- colnames(my_data)[parameter]
+
+ ggplot(aes(x = Group, y = value)) + 
+ stat_summary(fun.y = median,
+                geom = "bar", 
+              width = 0.5, aes(fill = Group),
+              alpha = 0.5) +
+ geom_dotplot(binaxis='y', 
+                size = 3, 
+               stackdir='center', 
+               aes(fill = Group)) +
+ ggpubr::stat_compare_means() +
+ theme_classic() + 
+  ylim(c(0,NA)) + 
+  ggtitle(parameter_name)
+ 
+ggsave(paste0("plot_results/plot_my_data_parameter_",parameter,".eps"), width = 8, height = 8, units = "cm", dpi = 120)
+
+}
+```
+
